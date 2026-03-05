@@ -1,97 +1,95 @@
 {
   "model": "DIN-V2 (Behavior-Type Embedding + Transformer Encoder)",
-  "params": 2237895,
+  "params": 235910,
+  "config": {
+    "embed_dim": 32,
+    "num_heads": 4,
+    "num_layers": 2,
+    "max_seq_len": 20,
+    "batch_size": 512,
+    "learning_rate": 0.001,
+    "dropout": 0.1,
+    "ff_dim": 128
+  },
+  "architecture": {
+    "behavior_embedding": "4 types (pv/fav/cart/buy) x 32dim, added to item embedding",
+    "transformer_encoder": "2 layers, 4 heads, F.scaled_dot_product_attention, causal mask, learnable position encoding",
+    "target_attention": "Enhanced MLP-based attention (query*key, query-key, concat)",
+    "prediction_mlp": "96->128->64->1 with BatchNorm+PReLU+Dropout"
+  },
+  "raw_data": {
+    "total_records": 1829350,
+    "users": 50000,
+    "items": 100000,
+    "categories": 5000,
+    "behavior_types": "4 (pv/fav/cart/buy) with Markov transition dependencies",
+    "behavior_transition": {
+      "pv->pv": "77.9%",
+      "fav->cart": "22.0%",
+      "cart->buy": "30.0%",
+      "buy->pv": "69.9%"
+    }
+  },
+  "training_data": {
+    "train": 5000,
+    "val": 2000,
+    "test": 2000,
+    "sampled_from": "813,652 total samples from 1.83M behavior records",
+    "note": "Items hashed to 5K buckets for CPU training; full 100K items for GPU"
+  },
   "history": [
     {
       "epoch": 1,
-      "tr_loss": 0.6146,
-      "tr_auc": 0.7126,
-      "tr_acc": 0.6484,
-      "v_loss": 0.495,
-      "v_auc": 0.9378,
-      "v_acc": 0.8934,
-      "v_ll": 0.495,
-      "lr": 0.001,
-      "best": true,
-      "time": 793.5
+      "train_loss": 0.7508,
+      "train_auc": 0.5046,
+      "val_auc": 0.5277,
+      "val_acc": 0.5165,
+      "time_s": 79
     },
     {
       "epoch": 2,
-      "tr_loss": 0.1297,
-      "tr_auc": 0.993,
-      "tr_acc": 0.9479,
-      "v_loss": 0.2371,
-      "v_auc": 0.9369,
-      "v_acc": 0.9314,
-      "v_ll": 0.2371,
-      "lr": 0.001,
-      "best": false,
-      "time": 519.4
+      "train_loss": 0.6883,
+      "train_auc": 0.5905,
+      "val_auc": 0.6678,
+      "val_acc": 0.524,
+      "time_s": 59
     },
     {
       "epoch": 3,
-      "tr_loss": 0.012,
-      "tr_auc": 1.0,
-      "tr_acc": 0.9991,
-      "v_loss": 0.237,
-      "v_auc": 0.9393,
-      "v_acc": 0.94,
-      "v_ll": 0.237,
-      "lr": 0.0005,
-      "best": true,
-      "time": 450.0
+      "train_loss": 0.615,
+      "train_auc": 0.7324,
+      "val_auc": 0.82,
+      "val_acc": 0.7105,
+      "time_s": 40
     },
     {
       "epoch": 4,
-      "tr_loss": 0.0045,
-      "tr_auc": 1.0,
-      "tr_acc": 1.0,
-      "v_loss": 0.2684,
-      "v_auc": 0.9404,
-      "v_acc": 0.942,
-      "v_ll": 0.2684,
-      "lr": 0.0005,
-      "best": true,
-      "time": 255.8
+      "train_loss": 0.4788,
+      "train_auc": 0.8879,
+      "val_auc": 0.9405,
+      "val_acc": 0.886,
+      "time_s": 35
     },
     {
       "epoch": 5,
-      "tr_loss": 0.0034,
-      "tr_auc": 1.0,
-      "tr_acc": 1.0,
-      "v_loss": 0.2805,
-      "v_auc": 0.9406,
-      "v_acc": 0.942,
-      "v_ll": 0.2805,
-      "lr": 0.00025,
-      "best": true,
-      "time": 149.7
+      "train_loss": 0.3119,
+      "train_auc": 0.9705,
+      "val_auc": 0.9574,
+      "val_acc": 0.894,
+      "time_s": 58
     }
   ],
+  "best_val_auc": 0.9574,
   "test": {
-    "auc": 0.9484,
-    "logloss": 0.2632,
-    "acc": 0.9448,
-    "loss": 0.2632
+    "auc": 0.9648,
+    "logloss": 0.4346,
+    "accuracy": 0.8975
   },
-  "best_val": 0.9406,
-  "time_s": 2168.4,
-  "architecture": {
-    "behavior_embedding": "4 types (pv/fav/cart/buy) x 32dim, added to item embedding",
-    "transformer": "2 layers, 4 heads, causal mask, learnable position encoding",
-    "target_attention": "Enhanced MLP-based (query*key, query-key, concat)",
-    "prediction_mlp": "96->256->128->64->1 with BN+PReLU+Dropout"
-  },
-  "raw_data": "1,829,350 records (50K users, 100K items, 5K cats, 4 behavior types with Markov transition)",
-  "data": {
-    "train": 15000,
-    "val": 5000,
-    "test": 5000,
-    "sampled_from": "813,652 total train samples"
-  },
+  "total_training_time_s": 271,
+  "device": "CPU (32 cores AMD EPYC 7713)",
   "features": {
-    "num_items": 61621,
-    "num_categories": 5001,
+    "num_items": 5001,
+    "num_categories": 501,
     "num_behaviors": 4
   }
 }
