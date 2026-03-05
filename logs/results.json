@@ -1,0 +1,15 @@
+{
+  "model": "DIN-V2",
+  "test": {
+    "auc": 0.5068,
+    "logloss": 0.7120368932561489,
+    "accuracy": 0.506
+  },
+  "val_auc": 0.506304,
+  "feature_dims": {
+    "num_items": 20000,
+    "num_categories": 2001,
+    "num_behaviors": 4
+  },
+  "params": 827303
+}

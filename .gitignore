@@ -1,0 +1,39 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distributions
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Data files (too large for git)
+data/UserBehavior.csv
+data/processed_data.pkl
+data/processed_small.pkl
+data/processed_tiny.pkl
+data/*.csv.zip
+
+# Model checkpoints (binary, too large)
+checkpoints/*.pt
+checkpoints/*/
+
+# TensorBoard event files
+logs/din_v2_*/events.out.tfevents.*
+logs/din_v2_*/
+
+# OS files
+.DS_Store
+Thumbs.db
