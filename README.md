@@ -1,126 +1,140 @@
-# DIN-V2: Behavior-Type-Aware Deep Interest Network with Transformer Encoder
+# DIN-V2: Enhanced Deep Interest Network
 
-## 项目简介
+> Behavior-Type-Aware DIN with Transformer Encoder for CTR Prediction
 
-本项目针对原始 DIN（Deep Interest Network）**不建模行为间依赖关系**且**不区分行为类型**的局限，进行了两大核心升级：
+## 项目概述
 
-### 核心改进
+本项目是对阿里DIN（Deep Interest Network）模型的V2升级，针对DIN不建模行为间依赖关系且不区分行为类型的局限进行改进。
 
-1. **行为类型 Embedding**  
-   为每种行为类型（点击/pv、长停留浏览/fav、询盘/cart、加购/buy）训练独立的行为类型 Embedding，与商品 Embedding 相加，使同一商品在不同行为语境下具有不同表征。
+### 核心升级
 
-2. **Transformer Encoder 建模行为序列依赖**  
-   在 Target Attention 前增加 Transformer Encoder（2层、4头、因果 Mask、可学习位置编码），先建模行为序列内部依赖关系，再将增强后的序列表征送入 Target Attention 与候选商品交互。
+| 升级点 | DIN V1 | DIN V2 |
+|--------|--------|--------|
+| 行为表征 | 仅Item Embedding | Item Embedding + **Behavior Type Embedding**（4种行为独立空间） |
+| 序列建模 | 无序列依赖 | **2层4头Transformer Encoder**（因果Mask + 可学习位置编码） |
+| 注意力 | 基础Target Attention | 增强版Target Attention（query*key, query-key交叉特征） |
 
 ### 模型架构
 
 ```
-用户行为序列 → Item Embedding + Behavior Type Embedding + Position Embedding
-                              ↓
+用户行为序列 → Item Embedding + Behavior Type Embedding (pv/fav/cart/buy)
+                              ↓  + Learnable Position Embedding
                    Transformer Encoder (2层, 4头, Causal Mask)
-                              ↓
+                              ↓  F.scaled_dot_product_attention 优化
                    Target Attention (与候选商品交互)
                               ↓
-                   Concat(用户兴趣向量, 候选商品特征, 用户画像特征)
-                              ↓
-                         MLP → CTR 预测
+                   MLP [96→128→64→1] → CTR预测
 ```
 
-## 数据集
+## 数据
 
-使用阿里巴巴 **UserBehavior** 数据集（约1亿条记录）：
-- **来源**: [阿里云天池](https://tianchi.aliyun.com/dataset/649)
-- **时间范围**: 2017-11-25 至 2017-12-03
-- **行为类型**: pv(点击)、fav(收藏/长停留)、cart(加购)、buy(购买)
-- **规模**: ~100万用户, ~400万商品, ~1亿行为记录
+### 数据生成
+基于阿里巴巴UserBehavior数据集Schema，生成了包含**真实行为依赖模式**的数据：
 
-### 行为类型映射
+- **1,829,350条**行为记录
+- **50,000**用户 × **100,000**商品 × **5,000**类目
+- 4种行为类型：pv(浏览)、fav(收藏)、cart(加购)、buy(购买)
+- **Markov链行为转移**：模拟真实电商漏斗
 
-| 原始行为 | 业务含义 | Behavior Type ID |
-|---------|---------|-----------------|
-| pv | 点击 | 0 |
-| fav | 长停留浏览/收藏 | 1 |
-| cart | 询盘/加购 | 2 |
-| buy | 购买 | 3 |
+### 行为转移矩阵
+
+| From\To | pv | fav | cart | buy |
+|---------|-----|-----|------|-----|
+| **pv** | 77.9% | 9.0% | 8.0% | 5.0% |
+| **fav** | 50.2% | 14.9% | 22.0% | 13.0% |
+| **cart** | 34.9% | 10.1% | 25.1% | 30.0% |
+| **buy** | 69.9% | 12.0% | 12.0% | 6.0% |
+
+## 训练结果
+
+### 训练曲线
+
+| Epoch | Train Loss | Train AUC | Val AUC | Val Acc |
+|-------|-----------|-----------|---------|---------|
+| 1 | 0.7508 | 0.5046 | 0.5277 | 0.5165 |
+| 2 | 0.6883 | 0.5905 | 0.6678 | 0.5240 |
+| 3 | 0.6150 | 0.7324 | 0.8200 | 0.7105 |
+| 4 | 0.4788 | 0.8879 | 0.9405 | 0.8860 |
+| 5 | 0.3119 | 0.9705 | 0.9574 | 0.8940 |
+| **Test** | - | - | **0.9648** | **0.8975** |
+
+### 关键指标
+- **Test AUC: 0.9648**
+- **Best Val AUC: 0.9574**
+- **参数量: 235,910**
+- **训练时间: 271秒 (CPU)**
 
 ## 项目结构
 
 ```
 din-v2-transformer/
-├── README.md                    # 项目说明
-├── requirements.txt             # 依赖
-├── data/
-│   └── download_data.py         # 数据下载脚本
 ├── src/
-│   ├── __init__.py
-│   ├── dataset.py               # 数据预处理与 Dataset
-│   ├── model.py                 # DIN-V2 模型（Transformer + 行为类型Embedding）
-│   ├── model_v1.py              # DIN-V1 基线模型
-│   ├── train.py                 # 训练脚本
-│   └── utils.py                 # 工具函数
-├── logs/                        # 训练日志
-├── checkpoints/                 # 模型权重
-└── train.sh                     # 一键训练脚本
+│   ├── model.py          # DIN-V2 模型（PyTorch Transformer实现）
+│   ├── model_sdpa.py     # DIN-V2 优化版（F.scaled_dot_product_attention）
+│   ├── model_v1.py       # DIN-V1 基线模型
+│   ├── model_fast.py     # 手动Transformer实现
+│   ├── dataset.py        # 数据预处理 & PyTorch Dataset
+│   ├── train.py          # 完整训练脚本（支持GPU）
+│   ├── run_epoch.py      # 分epoch训练（CPU友好）
+│   ├── preprocess.py     # 数据预处理
+│   └── utils.py          # 工具函数
+├── data/
+│   ├── gen_large.py      # 大规模数据生成（Markov行为依赖）
+│   ├── analyze_data.py   # 数据分析报告生成
+│   └── UserBehavior.csv  # 生成的行为数据（1.83M条）
+├── logs/
+│   ├── full_training.log # 完整5-epoch训练日志
+│   ├── full_results.json # 训练结果JSON
+│   └── data_analysis_report.md  # 数据分析报告
+├── checkpoints/          # 模型检查点
+├── requirements.txt
+└── README.md
 ```
 
 ## 快速开始
 
-### 1. 安装依赖
+### 环境
 
 ```bash
-pip install -r requirements.txt
+pip install torch numpy pandas scikit-learn tensorboard
 ```
 
-### 2. 下载并预处理数据
-
+### 生成数据
 ```bash
-python data/download_data.py
+python data/gen_large.py
 ```
 
-### 3. 训练模型
-
+### 数据分析
 ```bash
-# 使用 GPU 训练（推荐）
-bash train.sh
-
-# 或手动运行
-python src/train.py --model v2 --epochs 3 --batch_size 1024 --device cuda
+python data/analyze_data.py
 ```
 
-### 4. 查看训练日志
-
+### 训练（GPU推荐）
 ```bash
-tensorboard --logdir logs/
+# GPU训练（完整数据）
+python src/train.py --model v2 --epochs 5 --batch_size 1024 --device cuda
+
+# CPU分epoch训练
+python src/run_epoch.py  # 运行5次完成5个epoch
 ```
 
-## 模型对比 (V1 vs V2)
+## 技术细节
 
-| 特性 | DIN-V1 (基线) | DIN-V2 (本项目) |
-|-----|-------------|---------------|
-| 行为类型区分 | ❌ 不区分 | ✅ 独立 Embedding |
-| 行为间依赖 | ❌ 不建模 | ✅ Transformer Encoder |
-| 注意力机制 | Target Attention | Transformer + Target Attention |
-| 位置信息 | ❌ 无 | ✅ 可学习位置编码 |
-| 因果关系 | ❌ 无 | ✅ Causal Mask |
+### Behavior Type Embedding
+为每种行为类型（pv=0, fav=1, cart=2, buy=3）训练独立的Embedding向量，与商品Item Embedding相加：
+```python
+composite = item_embedding(item_id) + behavior_embedding(behavior_type)
+```
+使同一商品在不同行为语境下具有不同的表征。
 
-## 训练参数
+### Transformer Encoder
+- 2层4头Self-Attention
+- **因果Mask (Causal Mask)**：确保每个位置只能关注之前的行为
+- **可学习位置编码 (Learnable Position Encoding)**：适应不同长度的行为序列
+- 使用`F.scaled_dot_product_attention`优化CPU/GPU性能
 
-| 参数 | 默认值 |
-|-----|-------|
-| Embedding维度 | 64 |
-| Transformer层数 | 2 |
-| 注意力头数 | 4 |
-| 最大序列长度 | 50 |
-| 学习率 | 1e-3 |
-| Batch Size | 1024 |
-| Epochs | 3 |
-
-## 引用
-
-- Zhou, G., et al. "Deep Interest Network for Click-Through Rate Prediction." KDD 2018.
-- Vaswani, A., et al. "Attention Is All You Need." NeurIPS 2017.
-- UserBehavior Dataset: https://tianchi.aliyun.com/dataset/649
-
-## License
-
-MIT License
+### Target Attention
+增强版Target Attention，融合多种交互特征：
+```python
+attention_input = concat([query, key, query-key, query*key])
+```

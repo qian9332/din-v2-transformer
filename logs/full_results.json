@@ -1,0 +1,97 @@
+{
+  "model": "DIN-V2 (Behavior-Type Embedding + Transformer Encoder)",
+  "params": 2237895,
+  "history": [
+    {
+      "epoch": 1,
+      "tr_loss": 0.6146,
+      "tr_auc": 0.7126,
+      "tr_acc": 0.6484,
+      "v_loss": 0.495,
+      "v_auc": 0.9378,
+      "v_acc": 0.8934,
+      "v_ll": 0.495,
+      "lr": 0.001,
+      "best": true,
+      "time": 793.5
+    },
+    {
+      "epoch": 2,
+      "tr_loss": 0.1297,
+      "tr_auc": 0.993,
+      "tr_acc": 0.9479,
+      "v_loss": 0.2371,
+      "v_auc": 0.9369,
+      "v_acc": 0.9314,
+      "v_ll": 0.2371,
+      "lr": 0.001,
+      "best": false,
+      "time": 519.4
+    },
+    {
+      "epoch": 3,
+      "tr_loss": 0.012,
+      "tr_auc": 1.0,
+      "tr_acc": 0.9991,
+      "v_loss": 0.237,
+      "v_auc": 0.9393,
+      "v_acc": 0.94,
+      "v_ll": 0.237,
+      "lr": 0.0005,
+      "best": true,
+      "time": 450.0
+    },
+    {
+      "epoch": 4,
+      "tr_loss": 0.0045,
+      "tr_auc": 1.0,
+      "tr_acc": 1.0,
+      "v_loss": 0.2684,
+      "v_auc": 0.9404,
+      "v_acc": 0.942,
+      "v_ll": 0.2684,
+      "lr": 0.0005,
+      "best": true,
+      "time": 255.8
+    },
+    {
+      "epoch": 5,
+      "tr_loss": 0.0034,
+      "tr_auc": 1.0,
+      "tr_acc": 1.0,
+      "v_loss": 0.2805,
+      "v_auc": 0.9406,
+      "v_acc": 0.942,
+      "v_ll": 0.2805,
+      "lr": 0.00025,
+      "best": true,
+      "time": 149.7
+    }
+  ],
+  "test": {
+    "auc": 0.9484,
+    "logloss": 0.2632,
+    "acc": 0.9448,
+    "loss": 0.2632
+  },
+  "best_val": 0.9406,
+  "time_s": 2168.4,
+  "architecture": {
+    "behavior_embedding": "4 types (pv/fav/cart/buy) x 32dim, added to item embedding",
+    "transformer": "2 layers, 4 heads, causal mask, learnable position encoding",
+    "target_attention": "Enhanced MLP-based (query*key, query-key, concat)",
+    "prediction_mlp": "96->256->128->64->1 with BN+PReLU+Dropout"
+  },
+  "raw_data": "1,829,350 records (50K users, 100K items, 5K cats, 4 behavior types with Markov transition)",
+  "data": {
+    "train": 15000,
+    "val": 5000,
+    "test": 5000,
+    "sampled_from": "813,652 total train samples"
+  },
+  "features": {
+    "num_items": 61621,
+    "num_categories": 5001,
+    "num_behaviors": 4
+  }
+}
