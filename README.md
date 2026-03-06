@@ -1,140 +1,148 @@
 # DIN-V2: Enhanced Deep Interest Network
 
-> Behavior-Type-Aware DIN with Transformer Encoder for CTR Prediction
+基于淘宝真实用户行为数据集（318万条），对DIN模型进行升级迭代。
 
 ## 项目概述
 
-本项目是对阿里DIN（Deep Interest Network）模型的V2升级，针对DIN不建模行为间依赖关系且不区分行为类型的局限进行改进。
+DIN-V2 对标准DIN模型进行两大核心升级：
+1. **行为类型Embedding**：为点击、收藏、加购、购买四种行为训练独立Embedding，与商品Embedding相加，使同一商品在不同行为语境下具有不同表征
+2. **Transformer Encoder**：在Target Attention前增加Transformer Encoder（因果Mask + 可学习位置编码），建模行为序列内部依赖关系
 
-### 核心升级
+## 🔍 重要：AUC≈1.0 问题诊断与修复
 
-| 升级点 | DIN V1 | DIN V2 |
-|--------|--------|--------|
-| 行为表征 | 仅Item Embedding | Item Embedding + **Behavior Type Embedding**（4种行为独立空间） |
-| 序列建模 | 无序列依赖 | **2层4头Transformer Encoder**（因果Mask + 可学习位置编码） |
-| 注意力 | 基础Target Attention | 增强版Target Attention（query*key, query-key交叉特征） |
+### 问题
+第一版训练中Test AUC达到0.9998，明显不合理。
 
-### 模型架构
+### 根因
+经代码审计发现3个BUG：
+
+| BUG | 严重程度 | 问题 | 影响 |
+|-----|---------|------|------|
+| **BUG-1** | 🔴致命 | 负样本`target_category`硬编码为0 | 信息泄露，AUC→1.0 |
+| **BUG-2** | 🟡严重 | 均匀随机负采样 | popularity偏差，AUC虚高至0.92 |
+| **BUG-3** | 🟡中等 | 5K样本训练236K参数 | 47:1参数比，严重过拟合 |
+
+### 修复效果
+
+| 模型 | 修复前 Test AUC | 修复后 Test AUC |
+|------|----------------|----------------|
+| DIN-V2 | 0.9998 ❌ | **0.8565** ✅ |
+| DIN-V1 | ~0.9998 ❌ | **0.9412** ✅ |
+
+📋 **完整诊断报告**: [docs/bugfix_report.md](docs/bugfix_report.md)
+
+## 📊 数据集
+
+**淘宝用户行为数据集**（来源: [GitCode](https://gitcode.com/Open-source-documentation-tutorial/6af95)）
+
+| 指标 | 值 |
+|------|-----|
+| 总记录 | 3,182,261 条 |
+| 用户数 | 3,156,958 |
+| 商品数 | 945,601 |
+| 类目数 | 7,227 |
+| 行为类型 | 浏览94.23% / 收藏1.91% / 加购2.88% / 购买0.98% |
+| 时间范围 | 2014-11-18 ~ 2014-12-22 |
+
+### 数据特殊性
+- **99.2%用户仅1条记录**（user_id更像行级ID，非真实用户标识）
+- 需通过 **session-based方式**（按category+date分组）构建行为序列
+- 最终生成: 训练573K + 验证90K + 测试98K 样本
+
+## 🏗️ 模型架构
 
 ```
-用户行为序列 → Item Embedding + Behavior Type Embedding (pv/fav/cart/buy)
-                              ↓  + Learnable Position Embedding
-                   Transformer Encoder (2层, 4头, Causal Mask)
-                              ↓  F.scaled_dot_product_attention 优化
-                   Target Attention (与候选商品交互)
-                              ↓
-                   MLP [96→128→64→1] → CTR预测
+输入: 用户行为序列 [item_id, behavior_type, category_id] × N
+  ↓
+Item Embedding + Behavior Type Embedding (4种行为独立Embedding)  [V2独有]
+  ↓ + Learnable Position Embedding
+Transformer Encoder (1层2头, Causal Mask)  [V2独有]
+  ↓
+Target Attention (与候选商品交互)
+  ↓
+MLP [dim*3 → 128 → 64 → 1] → sigmoid → CTR预测
 ```
 
-## 数据
+## 🏋️ 训练结果
 
-### 数据生成
-基于阿里巴巴UserBehavior数据集Schema，生成了包含**真实行为依赖模式**的数据：
+### DIN-V2 (修复后)
+```
+Epoch | Train Loss | Train AUC | Val AUC
+  1   |   0.5308   |  0.7860   |  0.8362
+  2   |   0.4494   |  0.8558   |  0.8382  ← 最佳泛化
+  3   |   0.3521   |  0.9189   |  0.8301  ← 开始过拟合
+  4   |   0.2140   |  0.9715   |  0.8447
+  5   |   0.1115   |  0.9923   |  0.8348
+Test AUC = 0.8565
+```
 
-- **1,829,350条**行为记录
-- **50,000**用户 × **100,000**商品 × **5,000**类目
-- 4种行为类型：pv(浏览)、fav(收藏)、cart(加购)、buy(购买)
-- **Markov链行为转移**：模拟真实电商漏斗
+### DIN-V1 (基线对比)
+```
+Epoch | Train Loss | Train AUC | Val AUC
+  1   |   0.5420   |  0.7902   |  0.8484
+  2   |   0.3828   |  0.9091   |  0.9022  ← 最佳泛化
+  3   |   0.2209   |  0.9700   |  0.8994
+  4   |   0.1190   |  0.9912   |  0.8956
+  5   |   0.0683   |  0.9970   |  0.8916
+Test AUC = 0.9412
+```
 
-### 行为转移矩阵
-
-| From\To | pv | fav | cart | buy |
-|---------|-----|-----|------|-----|
-| **pv** | 77.9% | 9.0% | 8.0% | 5.0% |
-| **fav** | 50.2% | 14.9% | 22.0% | 13.0% |
-| **cart** | 34.9% | 10.1% | 25.1% | 30.0% |
-| **buy** | 69.9% | 12.0% | 12.0% | 6.0% |
-
-## 训练结果
-
-### 训练曲线
-
-| Epoch | Train Loss | Train AUC | Val AUC | Val Acc |
-|-------|-----------|-----------|---------|---------|
-| 1 | 0.7508 | 0.5046 | 0.5277 | 0.5165 |
-| 2 | 0.6883 | 0.5905 | 0.6678 | 0.5240 |
-| 3 | 0.6150 | 0.7324 | 0.8200 | 0.7105 |
-| 4 | 0.4788 | 0.8879 | 0.9405 | 0.8860 |
-| 5 | 0.3119 | 0.9705 | 0.9574 | 0.8940 |
-| **Test** | - | - | **0.9648** | **0.8975** |
-
-### 关键指标
-- **Test AUC: 0.9648**
-- **Best Val AUC: 0.9574**
-- **参数量: 235,910**
-- **训练时间: 271秒 (CPU)**
-
-## 项目结构
+## 📁 项目结构
 
 ```
 din-v2-transformer/
 ├── src/
-│   ├── model.py          # DIN-V2 模型（PyTorch Transformer实现）
-│   ├── model_sdpa.py     # DIN-V2 优化版（F.scaled_dot_product_attention）
-│   ├── model_v1.py       # DIN-V1 基线模型
-│   ├── model_fast.py     # 手动Transformer实现
-│   ├── dataset.py        # 数据预处理 & PyTorch Dataset
-│   ├── train.py          # 完整训练脚本（支持GPU）
-│   ├── run_epoch.py      # 分epoch训练（CPU友好）
-│   ├── preprocess.py     # 数据预处理
-│   └── utils.py          # 工具函数
+│   ├── model.py              # DIN-V2 核心模型
+│   ├── model_v1.py           # DIN-V1 基线模型
+│   ├── preprocess.py         # ❌ 旧版预处理 (含BUG)
+│   ├── preprocess_fixed.py   # ✅ 修复版预处理
+│   ├── train.py              # 旧版训练脚本
+│   ├── train_fixed.py        # ✅ 修复版训练脚本
+│   ├── dataset.py            # 旧版数据集类
+│   └── utils.py              # 工具函数
 ├── data/
-│   ├── gen_large.py      # 大规模数据生成（Markov行为依赖）
-│   ├── analyze_data.py   # 数据分析报告生成
-│   └── UserBehavior.csv  # 生成的行为数据（1.83M条）
+│   ├── taobao_raw.txt        # 淘宝原始数据 (318万条)
+│   ├── analyze_taobao.py     # 数据深度分析脚本
+│   └── data_analysis_report.json
+├── docs/
+│   └── bugfix_report.md      # 🔍 完整问题诊断报告
 ├── logs/
-│   ├── full_training.log # 完整5-epoch训练日志
-│   ├── full_results.json # 训练结果JSON
-│   └── data_analysis_report.md  # 数据分析报告
-├── checkpoints/          # 模型检查点
-├── requirements.txt
-└── README.md
+│   ├── training_v2_fixed_full.log
+│   ├── training_v1_fixed_full.log
+│   └── bugfix_results.json
+├── checkpoints/
+├── README.md
+└── requirements.txt
 ```
 
-## 快速开始
-
-### 环境
+## 🚀 快速开始
 
 ```bash
-pip install torch numpy pandas scikit-learn tensorboard
+# 克隆
+git clone https://github.com/qian9332/din-v2-transformer.git
+cd din-v2-transformer
+pip install -r requirements.txt
+
+# 数据分析
+python data/analyze_taobao.py
+
+# 预处理 (修复版)
+python src/preprocess_fixed.py
+
+# 训练V2
+python src/train_fixed.py --model v2 --epochs 5 --batch_size 256
+
+# 训练V1 (对比)
+python src/train_fixed.py --model v1 --epochs 5 --batch_size 256
+
+# GPU训练 (全部数据)
+python src/train_fixed.py --model v2 --epochs 10 --batch_size 1024 --embed_dim 64 --hash_buckets 100000
 ```
 
-### 生成数据
-```bash
-python data/gen_large.py
-```
+## 关键教训
 
-### 数据分析
-```bash
-python data/analyze_data.py
-```
-
-### 训练（GPU推荐）
-```bash
-# GPU训练（完整数据）
-python src/train.py --model v2 --epochs 5 --batch_size 1024 --device cuda
-
-# CPU分epoch训练
-python src/run_epoch.py  # 运行5次完成5个epoch
-```
-
-## 技术细节
-
-### Behavior Type Embedding
-为每种行为类型（pv=0, fav=1, cart=2, buy=3）训练独立的Embedding向量，与商品Item Embedding相加：
-```python
-composite = item_embedding(item_id) + behavior_embedding(behavior_type)
-```
-使同一商品在不同行为语境下具有不同的表征。
-
-### Transformer Encoder
-- 2层4头Self-Attention
-- **因果Mask (Causal Mask)**：确保每个位置只能关注之前的行为
-- **可学习位置编码 (Learnable Position Encoding)**：适应不同长度的行为序列
-- 使用`F.scaled_dot_product_attention`优化CPU/GPU性能
-
-### Target Attention
-增强版Target Attention，融合多种交互特征：
-```python
-attention_input = concat([query, key, query-key, query*key])
-```
+1. **负样本必须赋真实特征** — 任何特征字段的差异都可能造成信息泄露
+2. **AUC > 0.95 要警惕** — 真实推荐场景中极少见，大概率存在问题
+3. **负采样策略至关重要** — 均匀随机采样会引入popularity偏差，应使用freq^0.75加权
+4. **参数/样本比要合理** — 建议 < 1:10
+5. **数据特性决定模型选择** — session-based短序列不一定需要Transformer

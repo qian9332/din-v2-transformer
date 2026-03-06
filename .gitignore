@@ -1,16 +1,23 @@
+# Data files (large)
+*.pkl
+*.pt
+data/taobao_raw.txt
+data/UserBehavior.csv
+
+# Python
 __pycache__/
 *.pyc
 *.pyo
-*.egg-info/
-dist/
-build/
-.eggs/
-*.pkl
-*.pt
-*.pth
-*.csv
-!requirements.txt
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
 .DS_Store
-*.swp
-*.swo
-events.out.tfevents.*
+Thumbs.db
+
+# TensorBoard
+runs/
+events.out.*

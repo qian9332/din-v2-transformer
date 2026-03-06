@@ -1,0 +1,81 @@
+{
+  "basic": {
+    "total_records": 3182261,
+    "unique_users": 3156958,
+    "unique_items": 945601,
+    "unique_categories": 7227,
+    "date_range": [
+      "2014-11-18",
+      "2014-12-22"
+    ]
+  },
+  "behavior_distribution": {
+    "浏览(pv)": {
+      "count": 2998564,
+      "ratio": 94.23
+    },
+    "收藏(fav)": {
+      "count": 60921,
+      "ratio": 1.91
+    },
+    "加购(cart)": {
+      "count": 91654,
+      "ratio": 2.88
+    },
+    "购买(buy)": {
+      "count": 31122,
+      "ratio": 0.98
+    }
+  },
+  "user_sequence": {
+    "mean": 1.01,
+    "median": 1,
+    "max": 3,
+    "min": 1,
+    "std": 0.09,
+    "p25": 1,
+    "p75": 1,
+    "p90": 1,
+    "p95": 1,
+    "p99": 1,
+    "users_eq1": 3131782,
+    "users_eq1_ratio": 99.2,
+    "users_ge3": 127,
+    "users_ge3_ratio": 0.0,
+    "users_ge5": 0,
+    "users_ge5_ratio": 0.0,
+    "users_ge10": 0,
+    "users_ge10_ratio": 0.0
+  },
+  "multi_behavior_users": {
+    "users_with_1_type": 3154159,
+    "users_with_2_types": 2798,
+    "users_with_3_types": 1,
+    "users_with_4_types": 0
+  },
+  "conversion": {
+    "pv_to_fav": 0.03,
+    "pv_to_cart": 0.05,
+    "pv_to_buy": 0.02,
+    "cart_to_buy": 0.01,
+    "fav_to_buy": 0.01,
+    "items_multi_behavior": 126622,
+    "items_multi_behavior_ratio": 13.42
+  },
+  "item_longtail": {
+    "items_1_interaction": 255028,
+    "items_1_ratio": 26.97,
+    "top1pct_share": 10.51,
+    "top10pct_share": 38.67
+  },
+  "user_id_reliability": {
+    "multi_record_users": 25176,
+    "inconsistent_age": 24586,
+    "inconsistent_gender": 12707
+  },
+  "din_suitability": {
+    "min_hist_len_3_eligible_users": 0,
+    "min_hist_len_3_eligible_records": 0,
+    "strategy": "user_id序列长度中位数=1，绝大多数用户仅1条记录。需要按category+date构建session来获得有意义的行为序列，或只使用>=5条记录的用户子集。"
+  }
+}

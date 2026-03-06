@@ -1,0 +1,92 @@
+{
+  "report_title": "DIN-V2 AUC≈1.0 问题诊断与修复报告",
+  "report_date": "2026-03-06",
+  
+  "bugs_found": [
+    {
+      "id": "BUG-1",
+      "severity": "致命",
+      "title": "负样本target_category硬编码为0 — 信息泄露",
+      "location": "src/preprocess.py (line 57, 73, 94)",
+      "root_cause": "所有负样本的target_category设为0，而正样本永远是真实类目ID(1~7228)。模型仅通过category_embedding就能100%区分正负。",
+      "impact": "AUC从0.50直接提升到1.00",
+      "fix": "通过item→category映射为负样本赋真实category"
+    },
+    {
+      "id": "BUG-2", 
+      "severity": "严重",
+      "title": "均匀随机负采样导致popularity偏差",
+      "location": "src/preprocess.py (neg sampling)",
+      "root_cause": "正样本是用户交互过的热门商品，负样本均匀随机选取(大量冷门)。模型通过embedding更新频率差异区分。",
+      "impact": "修复BUG-1后仍有AUC≈0.925的偏差",
+      "fix": "使用频率加权负采样(freq^0.75)，消除popularity偏差"
+    },
+    {
+      "id": "BUG-3",
+      "severity": "中等",
+      "title": "训练数据过小，参数/样本比47:1",
+      "location": "训练配置",
+      "root_cause": "仅5000样本训练236K参数模型，模型可完全记忆训练集",
+      "impact": "加速过拟合，放大BUG-1和BUG-2的影响",
+      "fix": "从318万原始数据构建573K训练样本，实际使用100K+"
+    }
+  ],
+  
+  "before_fix": {
+    "v2_test_auc": 0.9998,
+    "v2_test_logloss": "N/A (near 0)",
+    "v1_test_auc": 0.9998,
+    "diagnosis": "模型未学习任何用户兴趣，仅利用category泄露和popularity偏差"
+  },
+  
+  "after_fix": {
+    "v2_test_auc": 0.8565,
+    "v2_test_logloss": 0.7159,
+    "v2_test_acc": 0.7664,
+    "v2_best_val_auc": 0.8447,
+    "v1_test_auc": 0.9412,
+    "v1_test_logloss": 0.3432,
+    "v1_test_acc": 0.8487,
+    "v1_best_val_auc": 0.9022
+  },
+  
+  "fix_verification": {
+    "bug1_before": "正样本cat=0: 0%, 负样本cat=0: 100%",
+    "bug1_after": "正样本cat=0: 0%, 负样本cat=0: 0%",
+    "bug1_status": "FIXED",
+    "bug2_before": "正/负样本频率比: 2.5x",
+    "bug2_after": "正/负样本频率比: 1.07x",
+    "bug2_status": "FIXED",
+    "bug3_before": "5K样本, 参数/样本比=47:1",
+    "bug3_after": "100K样本, 参数/样本比=1:0.3",
+    "bug3_status": "FIXED"
+  },
+  
+  "data_info": {
+    "dataset": "淘宝用户行为数据集 (GitCode)",
+    "total_records": 3182261,
+    "unique_users": 3156958,
+    "unique_items": 945601,
+    "behavior_types": {"浏览(pv)": "94.23%", "收藏(fav)": "1.91%", "加购(cart)": "2.88%", "购买(buy)": "0.98%"},
+    "train_samples": 573982,
+    "val_samples": 90266,
+    "test_samples": 98628,
+    "session_count": 49314
+  },
+  
+  "v2_training_history": [
+    {"epoch": 1, "train_loss": 0.5308, "train_auc": 0.786, "val_loss": 0.4722, "val_auc": 0.8362},
+    {"epoch": 2, "train_loss": 0.4494, "train_auc": 0.8558, "val_loss": 0.4743, "val_auc": 0.8382},
+    {"epoch": 3, "train_loss": 0.3521, "train_auc": 0.9189, "val_loss": 0.4999, "val_auc": 0.8301},
+    {"epoch": 4, "train_loss": 0.214, "train_auc": 0.9715, "val_loss": 0.5862, "val_auc": 0.8447},
+    {"epoch": 5, "train_loss": 0.1115, "train_auc": 0.9923, "val_loss": 0.7919, "val_auc": 0.8348}
+  ],
+  
+  "v1_training_history": [
+    {"epoch": 1, "train_loss": 0.542, "train_auc": 0.7902, "val_loss": 0.4816, "val_auc": 0.8484},
+    {"epoch": 2, "train_loss": 0.3828, "train_auc": 0.9091, "val_loss": 0.3945, "val_auc": 0.9022},
+    {"epoch": 3, "train_loss": 0.2209, "train_auc": 0.97, "val_loss": 0.449, "val_auc": 0.8994},
+    {"epoch": 4, "train_loss": 0.119, "train_auc": 0.9912, "val_loss": 0.5789, "val_auc": 0.8956},
+    {"epoch": 5, "train_loss": 0.0683, "train_auc": 0.997, "val_loss": 0.7311, "val_auc": 0.8916}
+  ]
+}

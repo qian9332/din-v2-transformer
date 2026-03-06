@@ -1,0 +1,55 @@
+{
+  "model": "v1",
+  "model_name": "DIN-V1",
+  "params": 294869,
+  "embed_dim": 16,
+  "hash_buckets": 10000,
+  "train_samples": 100000,
+  "val_samples": 90266,
+  "test_samples": 98628,
+  "best_val_auc": 0.8956,
+  "test_auc": 0.9412,
+  "test_logloss": 0.5396,
+  "test_accuracy": 0.8443,
+  "history": [
+    {
+      "epoch": 4,
+      "train_loss": 0.119,
+      "train_auc": 0.9912,
+      "val_loss": 0.5789,
+      "val_auc": 0.8956,
+      "val_logloss": 0.5789,
+      "val_acc": 0.798,
+      "time": 13.1
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.0683,
+      "train_auc": 0.997,
+      "val_loss": 0.7311,
+      "val_auc": 0.8916,
+      "val_logloss": 0.7311,
+      "val_acc": 0.7958,
+      "time": 25.0
+    }
+  ],
+  "feature_dims": {
+    "num_items": 945602,
+    "num_categories": 7228,
+    "num_behaviors": 4
+  },
+  "args": {
+    "model": "v1",
+    "epochs": 5,
+    "batch_size": 256,
+    "lr": 0.001,
+    "embed_dim": 16,
+    "max_seq_len": 20,
+    "hash_buckets": 10000,
+    "max_train_samples": 100000,
+    "max_batches": 0,
+    "log_file": "logs/training_v1_fixed_ep4_5.log",
+    "state_file": "checkpoints/v1_state.pt",
+    "start_epoch": 3
+  }
+}

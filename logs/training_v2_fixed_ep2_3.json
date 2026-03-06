@@ -1,0 +1,55 @@
+{
+  "model": "v2",
+  "model_name": "DIN-V2",
+  "params": 298565,
+  "embed_dim": 16,
+  "hash_buckets": 10000,
+  "train_samples": 100000,
+  "val_samples": 90266,
+  "test_samples": 98628,
+  "best_val_auc": 0.8382,
+  "test_auc": 0.8474,
+  "test_logloss": 0.4744,
+  "test_accuracy": 0.7592,
+  "history": [
+    {
+      "epoch": 2,
+      "train_loss": 0.4494,
+      "train_auc": 0.8558,
+      "val_loss": 0.4743,
+      "val_auc": 0.8382,
+      "val_logloss": 0.4743,
+      "val_acc": 0.7591,
+      "time": 44.4
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.3521,
+      "train_auc": 0.9189,
+      "val_loss": 0.4999,
+      "val_auc": 0.8301,
+      "val_logloss": 0.4999,
+      "val_acc": 0.7429,
+      "time": 20.9
+    }
+  ],
+  "feature_dims": {
+    "num_items": 945602,
+    "num_categories": 7228,
+    "num_behaviors": 4
+  },
+  "args": {
+    "model": "v2",
+    "epochs": 3,
+    "batch_size": 256,
+    "lr": 0.001,
+    "embed_dim": 16,
+    "max_seq_len": 20,
+    "hash_buckets": 10000,
+    "max_train_samples": 100000,
+    "max_batches": 0,
+    "log_file": "logs/training_v2_fixed_ep2_3.log",
+    "state_file": "checkpoints/v2_state.pt",
+    "start_epoch": 1
+  }
+}

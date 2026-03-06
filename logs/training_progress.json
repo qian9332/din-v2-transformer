@@ -1,9 +1,0 @@
-{
-  "status": "training",
-  "epoch": 1,
-  "batch": 200,
-  "total_batches": 1589,
-  "loss": 0.20187662981450558,
-  "speed": 56.62374394977594,
-  "elapsed": 1808.4286353588104
-}

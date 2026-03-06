@@ -1,0 +1,65 @@
+{
+  "model": "v1",
+  "model_name": "DIN-V1",
+  "params": 294869,
+  "embed_dim": 16,
+  "hash_buckets": 10000,
+  "train_samples": 100000,
+  "val_samples": 90266,
+  "test_samples": 98628,
+  "best_val_auc": 0.9022,
+  "test_auc": 0.9438,
+  "test_logloss": 0.3432,
+  "test_accuracy": 0.8487,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.542,
+      "train_auc": 0.7902,
+      "val_loss": 0.4816,
+      "val_auc": 0.8484,
+      "val_logloss": 0.4816,
+      "val_acc": 0.767,
+      "time": 11.7
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.3828,
+      "train_auc": 0.9091,
+      "val_loss": 0.3945,
+      "val_auc": 0.9022,
+      "val_logloss": 0.3945,
+      "val_acc": 0.8008,
+      "time": 13.7
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.2209,
+      "train_auc": 0.97,
+      "val_loss": 0.449,
+      "val_auc": 0.8994,
+      "val_logloss": 0.449,
+      "val_acc": 0.801,
+      "time": 16.4
+    }
+  ],
+  "feature_dims": {
+    "num_items": 945602,
+    "num_categories": 7228,
+    "num_behaviors": 4
+  },
+  "args": {
+    "model": "v1",
+    "epochs": 3,
+    "batch_size": 256,
+    "lr": 0.001,
+    "embed_dim": 16,
+    "max_seq_len": 20,
+    "hash_buckets": 10000,
+    "max_train_samples": 100000,
+    "max_batches": 0,
+    "log_file": "logs/training_v1_fixed.log",
+    "state_file": "checkpoints/v1_state.pt",
+    "start_epoch": 0
+  }
+}
